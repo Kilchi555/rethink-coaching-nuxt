@@ -10,7 +10,6 @@ const auth = useAuthStore()
     <h1 class="text-2xl font-bold text-primary">
       Hallo {{ auth.user?.first_name || 'Benutzer' }}
     </h1>
-
     <CalendarComponent />
   </div>
 </template>
