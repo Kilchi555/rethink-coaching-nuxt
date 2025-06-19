@@ -1,15 +1,16 @@
 <script setup lang="ts">
-const auth = useAuthStore()
+import { useAuthStore } from '~/stores/auth'
+import CalendarComponent from '~/components/CalendarComponent.vue'
 
-onMounted(() => {
-  if (!auth.user) {
-    auth.fetchUser()
-  }
-})
+const auth = useAuthStore()
 </script>
 
 <template>
-  <div>
-    <h1>Willkommen, {{ auth.user?.first_name || 'Gast' }}</h1>
+  <div class="p-4 space-y-6">
+    <h1 class="text-2xl font-bold text-primary">
+      Hallo {{ auth.user?.first_name || 'Benutzer' }}
+    </h1>
+
+    <CalendarComponent />
   </div>
 </template>
