@@ -1,52 +1,52 @@
+// stores/auth.ts
 import { defineStore } from 'pinia'
 
-type User = {
-    id: number
-    email: string
-    role: string
-    first_name: string
-    last_name: string
-    assigned_staff_id?: number
-    // Weitere Felder wie phone, birthdate etc.
-  }
-  
-  export const useAuthStore = defineStore('auth', {
-    state: () => ({
-      user: null as User | null,
-      loading: false,
-    }),
-  
-    actions: {
-      async fetchUser() {
-        this.loading = true
-        try {
-          const { data, error } = await useFetch<User>('/api/user', {
-            credentials: 'include',
-          })
-  
-          if (data.value) {
-            this.user = data.value
-          } else {
-            this.user = null
-          }
-        } catch (e) {
-          this.user = null
-        } finally {
-          this.loading = false
-        }
-      },
-  
-      logout() {
+export type User = {
+  id: number
+  email: string
+  role: string
+  first_name: string
+  last_name: string
+  assigned_staff_id?: number
+  phone?: string
+  birthdate?: string
+  // ...weitere Felder falls nötig
+}
+
+export const useAuthStore = defineStore('auth', {
+  state: () => ({
+    user: null as User | null,
+    loading: false,
+  }),
+
+  actions: {
+    async fetchUser() {
+      this.loading = true
+      try {
+        const user = await $fetch<User>('/api/user', {
+          credentials: 'include',
+        })
+
+        this.user = user ?? null
+      } catch (error) {
+        console.error('Fehler beim Fetch des Benutzers:', error)
         this.user = null
-        // Session-Cookie auch serverseitig löschen
-        return $fetch('/api/logout', {
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async logout() {
+      try {
+        await $fetch('/api/logout', {
           method: 'POST',
           credentials: 'include',
         })
+      } catch (error) {
+        console.warn('Logout-Fehler (evtl. bereits ausgeloggt):', error)
+      } finally {
+        this.user = null
       }
-      
-    }
-  })
-  
-
-  
+    },
+  },
+})
