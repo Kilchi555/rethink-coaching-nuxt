@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
-useAuthStore().fetchUser()
+
+useAuthStore().initAuth()
 </script>
 
 

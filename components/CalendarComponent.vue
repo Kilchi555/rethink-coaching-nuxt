@@ -55,8 +55,8 @@ const calendarOptions = ref<CalendarOptions>({
   slotMinTime: '06:00:00',
   slotMaxTime: '22:00:00',
   allDaySlot: false,
-  viewDidMount(info) {
-    emit('view-updated', info.view.currentStart)
+  datesSet(info) {
+  emit('view-updated', info.start)
   },
   eventAllow: (dropInfo: any) => {
     const now = new Date()
