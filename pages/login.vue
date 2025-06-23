@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { navigateTo } from '#app' // <-- FÜGE DIESE ZEILE HINZU
+import { useSupabaseClient, useSupabaseUser } from '#imports' // Oder 'nuxt/app' in manchen Nuxt-Setups, aber '#imports' ist der Standard für Auto-Imports
 
 
 const email = ref('')
@@ -19,8 +19,8 @@ const handleLogin = async () => {
     errorMsg.value = error.message
   } else {
     errorMsg.value = ''
-    // Ändere dies temporär zu einer anderen Route
-    navigateTo('/testseite-nach-login') // Wähle einen Pfad, den es noch nicht gibt
+    // Workaround für die Weiterleitung:
+    window.location.href = '/dashboard' // <-- Ändere DIESE ZEILE
   }
 }
 </script>

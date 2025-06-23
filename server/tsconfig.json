@@ -2,7 +2,7 @@
   "extends": "./.nuxt/tsconfig.json",
   "compilerOptions": {
     "types": ["@types/node", "nuxt"],
-    "moduleResolution": "bundler", // Oder "node16" oder "nodenext" - "bundler" ist oft am besten
-
-  }
+    "moduleResolution": "bundler",
+    "forceConsistentCasingInFileNames": true,
+    "module": "esnext"
 }
