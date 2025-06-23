@@ -1,128 +1,140 @@
 // stores/auth.ts
-import { ref, computed } from 'vue';
-import { defineStore } from 'pinia';
-import { useSupabaseClient, useSupabaseUser } from '#imports';
-import type { User } from '@supabase/supabase-js';
+/// <reference types="nuxt" />
+
+import { ref, computed, watch } from 'vue'
+import { defineStore } from 'pinia'
+import { useSupabaseUser, useSupabaseClient } from '#imports'
+import type { User } from '@supabase/supabase-js'
 
 export const useAuthStore = defineStore('auth', () => {
-  // State-Variablen
-  const user = useSupabaseUser(); // <<< HIER IST DIE WICHTIGSTE ÄNDERUNG
-  const userRole = ref<string>('');
-  const errorMessage = ref<string | null>(null);
-  const loading = ref<boolean>(false);
+  // State
+  const user = ref<User | null>(null)
+  const userRole = ref<string>('')
+  const errorMessage = ref<string | null>(null)
+  const loading = ref<boolean>(false)
 
-  // Getter
-  const isLoggedIn = computed(() => !!user.value);
-  const isAdmin = computed(() => userRole.value === 'admin');
-  const isStaff = computed(() => userRole.value === 'staff');
-  const isClient = computed(() => userRole.value === 'client');
+  // Computed
+  const isLoggedIn = computed(() => !!user.value)
+  const isAdmin = computed(() => userRole.value === 'admin')
+  const isStaff = computed(() => userRole.value === 'staff')
+  const isClient = computed(() => userRole.value === 'client')
 
-  // Aktionen
-  // initAuth wird hauptsächlich für den Listener benötigt, nicht für den Initial-Fetch
+  // Initialisierung
+  const initializeUser = async () => {
+    const supabaseUser = useSupabaseUser()
+    user.value = supabaseUser.value
+
+    if (process.client) {
+      watch(supabaseUser, async (newUser: User | null) => {
+        user.value = newUser
+        if (newUser) {
+          await fetchUserRole(newUser.id)
+        } else {
+          userRole.value = ''
+        }
+      }, { immediate: true })
+    } else {
+      if (user.value) {
+        await fetchUserRole(user.value.id)
+      }
+    }
+  }
+
   const initAuth = () => {
-    const supabase = useSupabaseClient();
+    const supabase = useSupabaseClient()
     supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
-        // user.value wird bereits durch useSupabaseUser aktualisiert,
-        // aber die Rolle muss hier ggf. noch geholt werden
-        await fetchUserRole(session.user.id);
+        await fetchUserRole(session.user.id)
       } else {
-        userRole.value = ''; // Rolle löschen beim Abmelden
+        user.value = null
+        userRole.value = ''
       }
-    });
-  };
+    })
+  }
 
+  // Login
   const login = async (email_val: string, password_val: string) => {
-    loading.value = true;
-    errorMessage.value = null;
-    const supabase = useSupabaseClient();
+    loading.value = true
+    errorMessage.value = null
+    const supabase = useSupabaseClient()
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email: email_val,
         password: password_val,
-      });
-
-      if (error) throw error;
-      // user.value wird durch useSupabaseUser automatisch aktualisiert
-      if (user.value) { // Nach erfolgreichem Login Rolle holen
-        await fetchUserRole(user.value.id);
-      }
-      return true;
+      })
+      if (error) throw error
+      return true
     } catch (err: any) {
-      errorMessage.value = err.message || 'Login fehlgeschlagen.';
-      return false;
+      errorMessage.value = err.message || 'Login fehlgeschlagen.'
+      return false
     } finally {
-      loading.value = false;
+      loading.value = false
     }
-  };
+  }
 
+  // Registrierung
   const register = async (email_val: string, password_val: string) => {
-    loading.value = true;
-    errorMessage.value = null;
-    const supabase = useSupabaseClient();
+    loading.value = true
+    errorMessage.value = null
+    const supabase = useSupabaseClient()
 
     try {
       const { error } = await supabase.auth.signUp({
         email: email_val,
         password: password_val,
-      });
-
-      if (error) throw error;
-      // user.value wird durch useSupabaseUser automatisch aktualisiert
-      if (user.value) { // Nach Registrierung Rolle holen (wird evtl. leer sein)
-          await fetchUserRole(user.value.id);
-      }
-      return true;
+      })
+      if (error) throw error
+      return true
     } catch (err: any) {
-      errorMessage.value = err.message || 'Registrierung fehlgeschlagen.';
-      return false;
+      errorMessage.value = err.message || 'Registrierung fehlgeschlagen.'
+      return false
     } finally {
-      loading.value = false;
+      loading.value = false
     }
-  };
+  }
 
+  // Logout
   const logout = async () => {
-    loading.value = true;
-    errorMessage.value = null;
-    const supabase = useSupabaseClient();
+    loading.value = true
+    errorMessage.value = null
+    const supabase = useSupabaseClient()
 
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      // user.value wird durch useSupabaseUser automatisch auf null gesetzt
-      userRole.value = '';
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      user.value = null
+      userRole.value = ''
     } catch (err: any) {
-      errorMessage.value = err.message || 'Abmeldung fehlgeschlagen.';
+      errorMessage.value = err.message || 'Abmeldung fehlgeschlagen.'
     } finally {
-      loading.value = false;
+      loading.value = false
     }
-  };
+  }
 
+  // Rolle laden
   const fetchUserRole = async (userId: string) => {
-    const supabase = useSupabaseClient();
+    const supabase = useSupabaseClient()
     try {
       const { data, error } = await supabase
         .from('users')
         .select('role')
         .eq('id', userId)
-        .single();
+        .single<{ role: string }>() 
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching user role from public.users:', error.message);
-        errorMessage.value = 'Konnte Benutzerrolle nicht laden.';
-        userRole.value = '';
-      } else if (data) {
-        userRole.value = data.role || '';
+        console.error('Fehler beim Laden der Benutzerrolle:', error.message)
+        errorMessage.value = 'Konnte Benutzerrolle nicht laden.'
+        userRole.value = ''
       } else {
-        userRole.value = '';
+        userRole.value = data?.role || ''
       }
     } catch (err: any) {
-      console.error('Unexpected error in fetchUserRole:', err.message);
-      errorMessage.value = 'Unerwarteter Fehler beim Laden der Rolle.';
-      userRole.value = '';
+      console.error('Unerwarteter Fehler beim Rollen-Fetch:', err.message)
+      errorMessage.value = 'Unbekannter Fehler beim Laden der Rolle.'
+      userRole.value = ''
     }
-  };
+  }
 
   return {
     user,
@@ -138,5 +150,6 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     logout,
     fetchUserRole,
-  };
-});
+    initializeUser,
+  }
+})

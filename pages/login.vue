@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useSupabaseClient, useSupabaseUser } from '#imports' // Oder 'nuxt/app' in manchen Nuxt-Setups, aber '#imports' ist der Standard für Auto-Imports
-
+import { useSupabaseClient, useSupabaseUser } from '#imports'
+import { navigateTo } from 'nuxt/app'
 
 const email = ref('')
 const password = ref('')
 const supabase = useSupabaseClient()
-const user = useSupabaseUser()
+const user = useSupabaseUser() // user ist ein Ref, das automatisch aktualisiert wird
 const errorMsg = ref('')
 
 const handleLogin = async () => {
@@ -19,8 +19,19 @@ const handleLogin = async () => {
     errorMsg.value = error.message
   } else {
     errorMsg.value = ''
-    // Workaround für die Weiterleitung:
-    window.location.href = '/dashboard' // <-- Ändere DIESE ZEILE
+
+    // Warten, bis der user-Ref aktualisiert wird (optional, aber oft hilfreich)
+    // Dies ist wichtig, wenn die Zielseite eine Middleware hat, die auf den angemeldeten Benutzer prüft.
+    await new Promise(resolve => setTimeout(resolve, 100)); // Kurze Verzögerung
+
+    // Überprüfen, ob der Benutzer jetzt eingeloggt ist
+    if (user.value) { // 'user' ist ein Ref, also user.value prüfen
+      await navigateTo('/dashboard') // Hier navigateTo korrekt awaiten
+    } else {
+      // Fallback oder Fehlerbehandlung, falls user.value nicht aktualisiert wird
+      console.error('Login erfolgreich, aber Benutzerstatus nicht aktualisiert. Navigiere trotzdem.');
+      await navigateTo('/dashboard'); // Dennoch navigieren
+    }
   }
 }
 </script>

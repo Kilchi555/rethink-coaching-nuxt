@@ -1,6 +1,7 @@
 // nuxt.config.ts
 import { defineNuxtConfig } from 'nuxt/config'
 import * as dotenv from 'dotenv'
+import type { NuxtConfig } from '@nuxt/schema'
 
 dotenv.config()
 
@@ -10,7 +11,6 @@ export default defineNuxtConfig({
 
   css: [
     '~/assets/css/main.css',
-    '@fullcalendar/common/main.css',
   ],
 
   modules: [
@@ -34,7 +34,7 @@ export default defineNuxtConfig({
   supabase: {
     url: process.env.SUPABASE_URL as string,
     key: process.env.SUPABASE_ANON_KEY as string,
-    redirect: true,
+    redirect: false, // Hier wurde bereits auf 'false' geändert, was gut ist
     redirectOptions: {
       login: '/login',
       callback: '/confirm',
@@ -55,4 +55,4 @@ export default defineNuxtConfig({
       console.log('✅ Supabase KEY:', process.env.SUPABASE_ANON_KEY)
     }
   }
-})
+} as NuxtConfig) // Hinzufügen der expliziten Typ-Assertion hier

@@ -1,8 +1,0 @@
-{
-  "extends": "./.nuxt/tsconfig.json",
-  "compilerOptions": {
-    "types": ["@types/node", "nuxt"],
-    "moduleResolution": "bundler",
-    "forceConsistentCasingInFileNames": true,
-    "module": "esnext"
-}
