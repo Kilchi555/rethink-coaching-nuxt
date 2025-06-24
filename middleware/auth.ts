@@ -1,6 +1,7 @@
 // middleware/auth.ts
-import { defineNuxtRouteMiddleware } from '#app'
+import { defineNuxtRouteMiddleware, navigateTo } from '#app'
 import { useSupabaseUser } from '#imports' // <-- Füge diesen Import hinzu
+
 
 export default defineNuxtRouteMiddleware(async (to, from) => {
   const user = useSupabaseUser() // Holt den vom Supabase-Modul verwalteten User

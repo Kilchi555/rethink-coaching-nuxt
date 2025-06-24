@@ -13,6 +13,12 @@ export default defineNuxtConfig({
     '~/assets/css/main.css',
   ],
 
+  build: {
+    transpile: [      
+      '@fullcalendar/core',
+    ],
+  },
+
   modules: [
     '@nuxt/eslint',
     '@nuxt/icon',

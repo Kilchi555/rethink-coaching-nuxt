@@ -1,15 +1,36 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useSupabaseClient, useSupabaseUser } from '#imports'
+import { useSupabaseUser, useSupabaseClient } from '#imports'
 import { navigateTo } from 'nuxt/app'
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+const supabase = useSupabaseClient()
 
 const email = ref('')
 const password = ref('')
-const supabase = useSupabaseClient()
+const fetchUserRole = async (supabaseClient: SupabaseClient, userId: string) => {
+  // statt useSupabaseClient() direkt hier aufzurufen
+  const { data, error } = await supabaseClient
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .single()
+  // ...
+}
 const user = useSupabaseUser() // user ist ein Ref, das automatisch aktualisiert wird
 const errorMsg = ref('')
 
+import { onMounted } from 'vue'
+
+onMounted(() => {
+  if (user.value) {
+    navigateTo('/dashboard')
+  }
+})
+
 const handleLogin = async () => {
+  errorMsg.value = ''
+
   const { error } = await supabase.auth.signInWithPassword({
     email: email.value,
     password: password.value
@@ -17,23 +38,23 @@ const handleLogin = async () => {
 
   if (error) {
     errorMsg.value = error.message
-  } else {
-    errorMsg.value = ''
-
-    // Warten, bis der user-Ref aktualisiert wird (optional, aber oft hilfreich)
-    // Dies ist wichtig, wenn die Zielseite eine Middleware hat, die auf den angemeldeten Benutzer prüft.
-    await new Promise(resolve => setTimeout(resolve, 100)); // Kurze Verzögerung
-
-    // Überprüfen, ob der Benutzer jetzt eingeloggt ist
-    if (user.value) { // 'user' ist ein Ref, also user.value prüfen
-      await navigateTo('/dashboard') // Hier navigateTo korrekt awaiten
-    } else {
-      // Fallback oder Fehlerbehandlung, falls user.value nicht aktualisiert wird
-      console.error('Login erfolgreich, aber Benutzerstatus nicht aktualisiert. Navigiere trotzdem.');
-      await navigateTo('/dashboard'); // Dennoch navigieren
-    }
+    return
   }
+
+  // 🔁 Warte max. 1 Sekunde auf den aktualisierten user.value
+  for (let i = 0; i < 10; i++) {
+    if (user.value) {
+      await navigateTo('/dashboard')
+      return
+    }
+    await new Promise(r => setTimeout(r, 100))
+  }
+
+  // ⚠️ Fallback falls SupabaseUser nicht aktualisiert wird
+  console.warn('Login erfolgreich, aber user.value nicht gesetzt – erzwinge Weiterleitung')
+  await navigateTo('/dashboard')
 }
+
 </script>
 
 <template>
